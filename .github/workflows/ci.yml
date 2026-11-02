@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.so }}
+
+    # bash nos tres sistemas: no Windows o shell padrao e o PowerShell, e ele
+    # desmonta "-Dexec.args=..." em dois argumentos antes de o Maven ver.
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      fail-fast: false
+      matrix:
+        so: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Testes
+        run: mvn -B -ntp verify
+
+      - name: Para que ordens existe
+        run: mvn -B -ntp -q exec:java -Dexec.args="ordens"
+
+      - name: O que a poda economiza
+        run: mvn -B -ntp -q exec:java -Dexec.args="poda"
+
+      - name: A construcao de Sylvester
+        run: mvn -B -ntp -q exec:java -Dexec.args="sylvester"
+
+      - name: As tres conferencias
+        run: mvn -B -ntp -q exec:java -Dexec.args="juiz"
+
+      - name: Relatorios de teste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-${{ matrix.so }}
+          path: target/surefire-reports
+
+  fundo:
+    # A ordem 16, onde a forca bruta cega olharia 10^77 tabuleiros. O job
+    # confere que a matriz existe e e de Hadamard antes de terminar.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Busca na ordem 16
+        run: mvn -B -ntp -q compile exec:java -Dexec.args="fundo"
